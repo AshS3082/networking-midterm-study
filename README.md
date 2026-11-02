@@ -18,6 +18,7 @@ Study materials for the networking midterm covering **chapters 1–5** of
 | `flashcards/flashcards.csv` | Import into **Anki** (File → Import; fields: Front, Back, Tags) |
 | `animations/` | Self-contained HTML animations (open `animations/index.html`) |
 | `cheatsheet/cheatsheet.html` | **One-page** printable cheat sheet (Ctrl/Cmd-P → Letter) |
+| `cheatsheet/cheatsheet.pdf` | Ready-made **one-page PDF** cheat sheet (human-readable, 2 columns) |
 | `quiz/` | Reserved for the quiz done **without LLM assistance** |
 
 ## Quick start
@@ -28,7 +29,7 @@ Study materials for the networking midterm covering **chapters 1–5** of
 4. **Drill** `flashcards/flashcards.csv` in Anki (make a deck, import, split on comma).
 5. **Watch** `animations/csma-cd.html`, `ethernet-learning.html`, `spanning-tree.html`,
    `datagram-forwarding.html` (just open them in a browser).
-6. **Print** `cheatsheet/cheatsheet.html` for the allowed one-page sheet.
+6. **Print** `cheatsheet/cheatsheet.html` — or just use the ready-made `cheatsheet/cheatsheet.pdf`.
 7. **Quiz** — do it without LLMs; drop your answers in `quiz/`.
 
 ## Animations
