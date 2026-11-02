@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CSMA/CD &amp; Exponential Backoff</title>
+<style>
+  :root { --bg:#0f172a; --panel:#1e293b; --ink:#e2e8f0; --accent:#38bdf8;
+          --ok:#22c55e; --bad:#ef4444; --idle:#475569; --back:#f59e0b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+         background:var(--bg); color:var(--ink); }
+  header { padding:1.2rem; text-align:center; border-bottom:1px solid #334155; }
+  h1 { margin:0; font-size:1.2rem; } header p { margin:.2rem 0 0; color:#94a3b8; font-size:.85rem; }
+  main { max-width:960px; margin:0 auto; padding:1.2rem; }
+  .controls { display:flex; gap:.6rem; flex-wrap:wrap; margin-bottom:1rem; }
+  button { background:var(--panel); color:var(--ink); border:1px solid #334155; border-radius:9px;
+           padding:.5rem .9rem; font-size:.9rem; cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  button.primary { background:var(--accent); color:#082f49; font-weight:600; border-color:var(--accent); }
+  .bus { position:relative; display:flex; justify-content:space-between; align-items:flex-end;
+         background:var(--panel); border-radius:12px; padding:1rem .6rem; border:1px solid #334155; }
+  .bus::after { content:""; position:absolute; left:1rem; right:1rem; bottom:2.4rem; height:4px;
+                background:#64748b; border-radius:2px; }
+  .st { width:16%; text-align:center; position:relative; z-index:1; }
+  .box { border-radius:10px; padding:.55rem .3rem; font-size:.8rem; border:1px solid #334155;
+         background:#0b1220; transition:all .2s; }
+  .box .name { font-weight:700; }
+  .box .meta { font-size:.68rem; color:#94a3b8; }
+  .connecting { width:4px; height:34px; background:#64748b; margin:.25rem auto 0; }
+  .st.active .box { border-color:var(--accent); box-shadow:0 0 0 2px rgba(56,189,248,.35); }
+  .st.coll .box { border-color:var(--bad); background:#3b0d0d; }
+  .st.succ .box { border-color:var(--ok); background:#0c2c17; }
+  .st.back .box { border-color:var(--back); background:#2c2410; }
+  .status { margin-top:1rem; display:flex; gap:1rem; flex-wrap:wrap; }
+  .stat { background:var(--panel); border:1px solid #334155; border-radius:10px; padding:.6rem .9rem; }
+  .stat b { color:var(--accent); }
+  .log { margin-top:1rem; background:#0b1220; border:1px solid #334155; border-radius:12px;
+         padding:.8rem; height:230px; overflow:auto; font-family:ui-monospace,Menlo,Consolas,monospace;
+         font-size:.82rem; }
+  .log div { padding:.15rem 0; border-bottom:1px dashed #1e293b; }
+  .log .ok { color:var(--ok); } .log .bad { color:var(--bad); } .log .inf { color:#94a3b8; }
+  .note { color:#94a3b8; font-size:.82rem; margin-top:1rem; }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>CSMA/CD &amp; Exponential Backoff</h1>
+  <p>Five stations all try to transmit at T=0. Round n backoff: k ∈ [0, 2ⁿ−1] slots.</p>
+</header>
+<main>
+  <div class="controls">
+    <button class="primary" id="step">Step ▸</button>
+    <button id="play">Play</button>
+    <button id="reset">Reset</button>
+  </div>
+
+  <div class="bus" id="bus"></div>
+
+  <div class="status">
+    <div class="stat">current slot: <b id="clock">0</b></div>
+    <div class="stat">slot time (10 Mbps Ethernet): <b>51.2 µs</b></div>
+  </div>
+
+  <div class="log" id="log"></div>
+
+  <p class="note">
+    Convention: a collision at time <em>t</em> is detected at <em>t+1</em>; a station in
+    collision round <em>n</em> picks <em>k ∈ [0, 2ⁿ−1]</em> and retries at <em>t+1+k</em>.
+    Round 10+ stays at 1023 slots; give up after 16 collisions. &larr; <a href="index.html">all animations</a>
+  </p>
+</main>
+<script>
+const N = 5;
+let stations, t, playing, timer;
+
+function reset() {
+  stop();
+  stations = [];
+  for (let i = 0; i < N; i++) stations.push({ id:i, coll:0, attemptAt:0, status:'ready', k:null });
+  t = 0;
+  document.getElementById('log').innerHTML = '';
+  log('T=0: S1–S5 all transmit → COLLISION.', 'bad');
+  render();
+}
+
+function log(msg, cls) {
+  const el = document.getElementById('log');
+  const d = document.createElement('div');
+  d.textContent = msg;
+  if (cls) d.className = cls;
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+}
+
+function step() {
+  const active = stations.filter(s => s.status !== 'done' && s.status !== 'failed');
+  if (active.length === 0) { log('— all stations finished —', 'inf'); stop(); return; }
+  t = Math.min(...active.map(s => s.attemptAt));
+  const att = active.filter(s => s.attemptAt === t);
+
+  if (att.length === 1) {
+    att[0].status = 'done';
+    att[0].k = null;
+    log(`T=${t}: S${att[0].id + 1} transmits alone → SUCCESS`, 'ok');
+  } else {
+    const names = att.map(s => 'S' + (s.id + 1)).join(', ');
+    att.forEach(s => {
+      s.coll++;
+      if (s.coll >= 16) { s.status = 'failed'; log(`T=${t}: S${s.id + 1} exceeded 16 collisions → GIVE UP`, 'bad'); return; }
+      s.status = 'backoff';
+      const range = Math.pow(2, Math.min(s.coll, 10));
+      const k = Math.floor(Math.random() * range);
+      s.k = k; s.attemptAt = t + 1 + k;
+    });
+    log(`T=${t}: ${names} collide (round ${att[0].coll}) → backoffs k=`
+        + att.filter(s => s.status !== 'failed').map(s => `S${s.id + 1}:${s.k}`).join(' ') + '.', 'bad');
+  }
+  render();
+}
+
+function render() {
+  document.getElementById('clock').textContent = t;
+  const bus = document.getElementById('bus');
+  bus.innerHTML = '';
+  stations.forEach(s => {
+    const d = document.createElement('div');
+    d.className = 'st';
+    if (s.status === 'backoff') d.classList.add('back'); else if (s.status === 'ready') d.classList.add('active');
+    if (s.status === 'done') d.classList.add('succ'); if (s.status === 'failed') d.classList.add('coll');
+    d.innerHTML = `<div class="box"><div class="name">S${s.id + 1}</div>
+      <div class="meta">coll:${s.coll}</div>
+      <div class="meta">${s.status === 'done' ? 'sent ✓' : s.status === 'failed' ? 'gave up ✗'
+        : s.status === 'backoff' ? 'retry T=' + s.attemptAt : 'ready'}</div></div>
+      <div class="connecting"></div>`;
+    bus.appendChild(d);
+  });
+}
+
+function play() { if (playing) { stop(); return; } playing = true;
+  document.getElementById('play').textContent = 'Pause';
+  timer = setInterval(step, 850); }
+function stop() { playing = false; clearInterval(timer);
+  const b = document.getElementById('play'); if (b) b.textContent = 'Play'; }
+
+document.getElementById('step').onclick = step;
+document.getElementById('play').onclick = play;
+document.getElementById('reset').onclick = reset;
+reset();
+</script>
+</body>
+</html>

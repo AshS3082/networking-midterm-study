@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spanning Tree Algorithm</title>
+<style>
+  :root { --bg:#0f172a; --panel:#1e293b; --ink:#e2e8f0; --accent:#38bdf8; --ok:#22c55e; --bad:#ef4444; --idle:#475569; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--ink); }
+  header { padding:1.2rem; text-align:center; border-bottom:1px solid #334155; }
+  h1 { margin:0; font-size:1.2rem; } header p { margin:.2rem 0 0; color:#94a3b8; font-size:.85rem; }
+  main { max-width:960px; margin:0 auto; padding:1.2rem; }
+  .controls { display:flex; gap:.6rem; flex-wrap:wrap; margin-bottom:1rem; }
+  button { background:var(--panel); color:var(--ink); border:1px solid #334155; border-radius:9px; padding:.5rem .9rem; font-size:.9rem; cursor:pointer; }
+  button:hover { border-color:var(--accent); } button.primary { background:var(--accent); color:#082f49; font-weight:600; }
+  svg { width:100%; height:auto; background:var(--panel); border-radius:12px; border:1px solid #334155; }
+  .none { } .tree { stroke:var(--ok) !important; stroke-width:6 !important; }
+  .pruned { stroke:var(--bad) !important; stroke-width:4 !important; stroke-dasharray:9 8; }
+  .root circle { fill:#facc15 !important; filter:drop-shadow(0 0 10px #facc15); }
+  .msg { background:var(--panel); border:1px solid #334155; border-radius:10px; padding:.8rem 1rem; margin-top:1rem; min-height:4.2rem; font-size:.92rem; }
+  .msg b { color:var(--accent); }
+  .legend { display:flex; gap:1.2rem; color:#94a3b8; font-size:.82rem; margin-top:.6rem; flex-wrap:wrap; }
+  .sw { display:inline-block; width:14px; height:14px; border-radius:50%; vertical-align:-2px; margin-right:.3rem; }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Spanning Tree Algorithm</h1>
+  <p>Root = lowest ID. Each switch keeps one least-cost root-ward link; ties broken by lowest-ID neighbor.</p>
+</header>
+<main>
+  <div class="controls">
+    <button class="primary" id="next">Next step ▸</button>
+    <button id="reset">Reset</button>
+  </div>
+  <svg viewBox="0 0 820 420" id="svg"></svg>
+  <div class="msg" id="msg">Press <b>Next step</b> to run STP on this 3×2 switch grid.</div>
+  <div class="legend">
+    <span><span class="sw" style="background:#22d3ee"></span>switch</span>
+    <span><span class="sw" style="background:#facc15"></span>root</span>
+    <span><span class="sw" style="background:#22c55e"></span>tree link (root port)</span>
+    <span><span class="sw" style="background:#ef4444"></span>pruned link</span>
+    &nbsp;·&nbsp; <a href="index.html">all animations</a>
+  </div>
+</main>
+<script>
+const POS = { S1:[150,110], S4:[410,110], S6:[670,110], S3:[150,320], S5:[410,320], S2:[670,320] };
+const ID  = { S1:1, S4:4, S6:6, S3:3, S5:5, S2:2 };
+const EDGES = [['S1','S4'],['S4','S6'],['S3','S5'],['S5','S2'],['S1','S3'],['S4','S5'],['S6','S2']];
+const TREE  = [['S1','S3'],['S1','S4'],['S3','S5'],['S4','S6'],['S5','S2']];
+const PRUNE = [['S4','S5'],['S6','S2']];
+
+const svg = document.getElementById('svg');
+const key=(a,b)=>[a,b].sort().join('-');
+const tk = TREE.map(([a,b])=>key(a,b)), pk = PRUNE.map(([a,b])=>key(a,b));
+let step = 0;
+
+function build(){
+  svg.innerHTML='';
+  EDGES.forEach(([a,b])=>{
+    const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+    l.setAttribute('x1',POS[a][0]); l.setAttribute('y1',POS[a][1]);
+    l.setAttribute('x2',POS[b][0]); l.setAttribute('y2',POS[b][1]);
+    l.setAttribute('class','link'); l.setAttribute('stroke','#475569');
+    l.setAttribute('stroke-width',3); l.id='e-'+key(a,b); svg.appendChild(l);
+  });
+  Object.keys(POS).forEach(n=>{
+    const g=document.createElementNS('http://www.w3.org/2000/svg','g'); g.setAttribute('class','node'); g.id='n-'+n;
+    const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx',POS[n][0]); c.setAttribute('cy',POS[n][1]); c.setAttribute('r',24); c.setAttribute('fill','#22d3ee');
+    const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',POS[n][0]); t.setAttribute('y',POS[n][1]+5); t.setAttribute('fill','#0b1220');
+    t.setAttribute('text-anchor','middle'); t.setAttribute('font','600 15px system-ui'); t.textContent=n;
+    const id=document.createElementNS('http://www.w3.org/2000/svg','text');
+    id.setAttribute('x',POS[n][0]); id.setAttribute('y',POS[n][1]+42); id.setAttribute('fill','#94a3b8');
+    id.setAttribute('text-anchor','middle'); id.setAttribute('font','12px system-ui'); id.textContent='ID '+ID[n];
+    g.appendChild(c); g.appendChild(t); g.appendChild(id); svg.appendChild(g);
+  });
+  update();
+}
+function setEdge(a,b,cls){ const l=document.getElementById('e-'+key(a,b)); l.setAttribute('class','link '+cls); }
+function setMsg(h){ document.getElementById('msg').innerHTML=h; }
+
+function update(){
+  if(step===0) setMsg('Press <b>Next step</b>. Switches exchange BPDUs and elect the root.');
+  if(step===1){ document.getElementById('n-S1').classList.add('root');
+    setMsg('<b>Step 1 — Root election:</b> the switch with the <b>lowest ID</b> becomes root. Here S1 (ID 1) is the root.'); }
+  if(step===2){ TREE.forEach(([a,b])=>setEdge(a,b,'tree'));
+    setMsg('<b>Step 2 — Root ports:</b> every non-root switch selects its least-cost path to the root, ties broken by the lowest-ID neighbor. Green = chosen (tree) links.'); }
+  if(step===3){ PRUNE.forEach(([a,b])=>setEdge(a,b,'pruned'));
+    setMsg('<b>Step 3 — Prune:</b> <b>S4–S5</b> is pruned (S5 prefers S3, ID 3 &lt; 4) and <b>S6–S2</b> is pruned (S2 prefers S5, ID 5 &lt; 6). Result: the loop-free tree S1–S3–S5–S2 plus S1–S4–S6.'); }
+}
+document.getElementById('next').onclick=()=>{ if(step<3) step++; update(); };
+document.getElementById('reset').onclick=()=>{ step=0; build(); };
+build();
+</script>
+</body>
+</html>

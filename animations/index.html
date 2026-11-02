@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Networking Midterm — Animations</title>
+<style>
+  :root { --bg:#0f172a; --panel:#1e293b; --ink:#e2e8f0; --accent:#38bdf8; --accent2:#f472b6; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+         background:var(--bg); color:var(--ink); line-height:1.5; }
+  header { padding:2.5rem 1.5rem; text-align:center; background:linear-gradient(135deg,#1e293b,#0f172a); }
+  h1 { margin:0 0 .4rem; font-size:1.8rem; }
+  header p { margin:0; color:#94a3b8; }
+  main { max-width:900px; margin:0 auto; padding:1.5rem; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1rem; }
+  a.card { display:block; padding:1.2rem; border-radius:14px; background:var(--panel);
+           border:1px solid #334155; text-decoration:none; color:var(--ink);
+           transition:transform .15s, border-color .15s; }
+  a.card:hover { transform:translateY(-3px); border-color:var(--accent); }
+  .card h2 { margin:0 0 .3rem; font-size:1.05rem; color:var(--accent); }
+  .card p { margin:0; font-size:.9rem; color:#94a3b8; }
+  footer { text-align:center; color:#64748b; font-size:.85rem; padding:2rem 1rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Networking Midterm — Animations</h1>
+  <p>Chapters 1–5 · tap a card to open</p>
+</header>
+<main>
+  <div class="cards">
+    <a class="card" href="csma-cd.html">
+      <h2>CSMA/CD &amp; Exponential Backoff</h2>
+      <p>Five stations contend on a shared bus; watch collisions and the random backoff resolve.</p>
+    </a>
+    <a class="card" href="ethernet-learning.html">
+      <h2>Ethernet Learning Switches</h2>
+      <p>Send frames and watch each switch learn source addresses, forward, or flood.</p>
+    </a>
+    <a class="card" href="spanning-tree.html">
+      <h2>Spanning Tree Algorithm</h2>
+      <p>Root election, root ports, and the links that get pruned to make a loop-free tree.</p>
+    </a>
+    <a class="card" href="datagram-forwarding.html">
+      <h2>Datagram Forwarding</h2>
+      <p>Follow a packet hop-by-hop using forwarding tables, and see a routing loop.</p>
+    </a>
+  </div>
+</main>
+<footer>Built for the Lab 09 study materials · textbook: Dordal, <em>An Introduction to Computer Networks</em></footer>
+</body>
+</html>

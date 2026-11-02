@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ethernet Learning Switches</title>
+<style>
+  :root { --bg:#0f172a; --panel:#1e293b; --ink:#e2e8f0; --accent:#38bdf8;
+          --host:#f472b6; --sw:#22d3ee; --ok:#22c55e; --idle:#475569; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+         background:var(--bg); color:var(--ink); }
+  header { padding:1.2rem; text-align:center; border-bottom:1px solid #334155; }
+  h1 { margin:0; font-size:1.2rem; } header p { margin:.2rem 0 0; color:#94a3b8; font-size:.85rem; }
+  main { max-width:1100px; margin:0 auto; padding:1.2rem; display:grid;
+         grid-template-columns: 1.3fr 1fr; gap:1.2rem; }
+  @media (max-width:820px){ main{ grid-template-columns:1fr; } }
+  .controls { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:.8rem; }
+  button { background:var(--panel); color:var(--ink); border:1px solid #334155; border-radius:9px;
+           padding:.45rem .8rem; font-size:.85rem; cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  button.primary { background:var(--accent); color:#082f49; font-weight:600; }
+  button.danger { background:#7f1d1d; }
+  svg { width:100%; height:auto; background:var(--panel); border-radius:12px; border:1px solid #334155; }
+  .node circle { stroke:#0b1220; stroke-width:3; transition:all .2s; }
+  .node.host circle { fill:var(--host); } .node.sw circle { fill:var(--sw); }
+  .node text { fill:#0b1220; font:600 14px system-ui; text-anchor:middle; pointer-events:none; }
+  .node.hl circle { filter:drop-shadow(0 0 8px #fff); stroke:#fff; }
+  .link { stroke:var(--idle); stroke-width:3; }
+  .link.active { stroke:var(--accent); stroke-width:5; }
+  .tables { display:grid; grid-template-columns:1fr 1fr; gap:.7rem; }
+  .tbl { background:var(--panel); border:1px solid #334155; border-radius:10px; padding:.6rem .7rem; }
+  .tbl h3 { margin:0 0 .4rem; font-size:.85rem; color:var(--sw); }
+  .tbl table { width:100%; border-collapse:collapse; font-size:.8rem; }
+  .tbl td { padding:.15rem .3rem; border-bottom:1px dashed #334155; }
+  .tbl td.k { color:#94a3b8; width:40%; } .tbl td.v { font-weight:600; }
+  .flash { animation:fl .8s ease; } @keyframes fl { from{ background:#14532d; } to{ background:transparent; } }
+  .log { margin-top:.9rem; background:#0b1220; border:1px solid #334155; border-radius:10px;
+         padding:.6rem; height:140px; overflow:auto; font-family:ui-monospace,Menlo,monospace; font-size:.78rem; }
+  .log div { padding:.12rem 0; } .log .ok{color:var(--ok);} .log .info{color:#94a3b8;}
+  .note { color:#94a3b8; font-size:.8rem; grid-column:1/-1; margin-top:.4rem; }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Ethernet Learning Switches</h1>
+  <p>Learning algorithm: record the <b>source</b> + arrival port; forward if the destination is known, otherwise flood.</p>
+</header>
+<main>
+  <div>
+    <div class="controls" id="controls"></div>
+    <svg viewBox="0 0 820 440" id="svg"></svg>
+    <div class="controls" style="margin-top:.8rem">
+      <button class="danger" id="reset">Reset tables</button>
+      <button id="clear">Clear log</button>
+    </div>
+    <div class="log" id="log"></div>
+  </div>
+  <div class="tables" id="tables"></div>
+  <p class="note">
+    Topology: A─S1─S2─S3─C, with D attached to S2 and S4 attached to S2, and B attached to S4.
+    Send the textbook sequence <em>A→D, D→A, A→B, B→D</em> and compare with the worked example.
+    &larr; <a href="index.html">all animations</a>
+  </p>
+</main>
+
+<script>
+const POS = {
+  A:[50,150], S1:[210,150], S2:[410,150], S3:[620,150], C:[765,150],
+  S4:[310,300], B:[310,405], D:[520,300]
+};
+const SWITCHES = ['S1','S2','S3','S4'];
+const HOSTS = ['A','B','C','D'];
+const EDGES = [['A','S1'],['S1','S2'],['S2','S3'],['S3','C'],['S2','S4'],['S4','B'],['S2','D']];
+
+let tables, busy = false;
+const svg = document.getElementById('svg');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function build() {
+  svg.innerHTML = '';
+  EDGES.forEach(([a,b], i) => {
+    const l = document.createElementNS('http://www.w3.org/2000/svg','line');
+    l.setAttribute('x1',POS[a][0]); l.setAttribute('y1',POS[a][1]);
+    l.setAttribute('x2',POS[b][0]); l.setAttribute('y2',POS[b][1]);
+    l.setAttribute('class','link'); l.id = 'link-'+i; svg.appendChild(l);
+  });
+  Object.keys(POS).forEach(n => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('class','node ' + (HOSTS.includes(n)?'host':'sw')); g.id='node-'+n;
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx',POS[n][0]); c.setAttribute('cy',POS[n][1]); c.setAttribute('r',20);
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',POS[n][0]); t.setAttribute('y',POS[n][1]+5); t.textContent = n;
+    g.appendChild(c); g.appendChild(t); svg.appendChild(g);
+  });
+}
+
+function edgeIndex(a,b){ return EDGES.findIndex(([x,y]) => (x===a&&y===b)||(x===b&&y===a)); }
+function neighbors(n){ const out=[]; EDGES.forEach(([a,b])=>{ if(a===n) out.push(b); else if(b===n) out.push(a); }); return out; }
+function hl(n, on){ const el=document.getElementById('node-'+n); if(el) el.classList.toggle('hl', on); }
+function hlEdge(a,b,on){ const i=edgeIndex(a,b); const el=document.getElementById('link-'+i); if(el) el.classList.toggle('active', on); }
+
+function renderTables() {
+  const host = document.getElementById('tables');
+  host.innerHTML = '';
+  SWITCHES.forEach(s => {
+    const div = document.createElement('div'); div.className='tbl';
+    const rows = Object.entries(tables[s]).map(([k,v]) =>
+      `<tr><td class="k">${k}</td><td class="v">${v}</td></tr>`).join('') || '<tr><td class="k">(empty)</td><td></td></tr>';
+    div.innerHTML = `<h3>${s} — forwarding table</h3><table>${rows}</table>`;
+    host.appendChild(div);
+  });
+}
+
+function log(msg, cls){ const l=document.getElementById('log'); const d=document.createElement('div');
+  d.textContent=msg; if(cls) d.className=cls; l.appendChild(d); l.scrollTop=l.scrollHeight; }
+
+async function travel(from, to) {
+  hl(from,true); hlEdge(from,to,true); await sleep(420);
+  hlEdge(from,to,false); hl(from,false);
+}
+
+// Deliver a frame from src to dst through the switch network.
+async function sendFrame(src, dst) {
+  if (busy) return; busy = true;
+  log(`▶ ${src} → ${dst}`, 'info');
+  // find the switch src is attached to
+  const start = neighbors(src).find(n => SWITCHES.includes(n));
+  await process(start, src, dst, src);
+  renderTables();
+  log(`✔ frame ${src}→${dst} delivered`, 'ok');
+  busy = false;
+}
+
+// At switch `sw`, a frame with source `src` arrived from neighbor `from`.
+async function process(sw, src, dst, from) {
+  await travel(from, sw);
+  // LEARN source
+  if (!(src in tables[sw])) { tables[sw][src] = from; log(`   ${sw}: learns ${src} ⇒ port ${from}`); }
+  else if (tables[sw][src] !== from) { tables[sw][src] = from; }
+  renderTables();
+  await sleep(180);
+
+  // DECIDE destination
+  const known = tables[sw][dst];
+  let outs;
+  if (known && known !== from) { outs = [known]; log(`   ${sw}: knows ${dst} ⇒ forward to ${known}`); }
+  else { outs = neighbors(sw).filter(n => n !== from); log(`   ${sw}: ${dst} unknown ⇒ FLOOD to ${outs.join(', ')}`); }
+
+  for (const nb of outs) {
+    if (HOSTS.includes(nb)) {
+      await travel(sw, nb);
+      if (nb === dst) { hl(nb,true); await sleep(160); hl(nb,false); }
+    } else if (SWITCHES.includes(nb)) {
+      await process(nb, src, dst, sw);
+    }
+  }
+}
+
+function reset(){ tables = {}; SWITCHES.forEach(s=>tables[s]={}); renderTables(); }
+
+// ---- controls ----
+const seq = [['A','D'],['D','A'],['A','B'],['B','D']];
+const ctr = document.getElementById('controls');
+seq.forEach(([a,b]) => {
+  const btn = document.createElement('button');
+  btn.className='primary'; btn.textContent = `${a} → ${b}`;
+  btn.onclick = () => sendFrame(a,b); ctr.appendChild(btn);
+});
+['B→A','C→B','C→D'].forEach(pair => {
+  const [a,b] = pair.split('→');
+  const btn=document.createElement('button'); btn.textContent=pair; btn.onclick=()=>sendFrame(a,b); ctr.appendChild(btn);
+});
+document.getElementById('reset').onclick = reset;
+document.getElementById('clear').onclick = () => document.getElementById('log').innerHTML='';
+
+build(); reset();
+</script>
+</body>
+</html>

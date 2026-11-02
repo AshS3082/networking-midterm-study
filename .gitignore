@@ -1,0 +1,15 @@
+# OS / editors
+.DS_Store
+Thumbs.db
+*.swp
+
+# Anki / exports
+*.apkg
+*.colpkg
+
+# Python
+__pycache__/
+*.pyc
+
+# Rendered cheat sheet output
+cheatsheet/*.pdf

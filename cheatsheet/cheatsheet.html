@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Networking Midterm — One-Page Cheat Sheet</title>
+<style>
+  :root{ --ink:#111; --muted:#555; --rule:#999; --accent:#0b4f7a; --box:#f2f6fa; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; color:var(--ink); font-family:"Helvetica Neue",Arial,sans-serif; }
+  body{ font-size:8.4px; line-height:1.28; }
+  .sheet{ width:7.9in; margin:0 auto; padding:0.28in 0.3in; column-count:3; column-gap:0.22in; column-rule:1px solid var(--rule); }
+  h1{ column-span:all; margin:0 0 2px; font-size:15px; letter-spacing:.2px; }
+  .sub{ column-span:all; margin:0 0 6px; color:var(--muted); font-size:8px; border-bottom:1.5px solid var(--ink); padding-bottom:3px; }
+  h2{ font-size:9.2px; margin:6px 0 2px; color:var(--accent); border-bottom:1px solid var(--rule);
+      padding-bottom:1px; break-after:avoid; }
+  h3{ font-size:8.4px; margin:4px 0 1px; break-after:avoid; }
+  p{ margin:1px 0; } ul{ margin:1px 0 2px; padding-left:11px; } li{ margin:0.5px 0; }
+  code,.f{ font-family:"DejaVu Sans Mono",Consolas,monospace; font-size:7.9px; }
+  .f{ background:var(--box); padding:0 2px; border-radius:2px; white-space:nowrap; }
+  b,strong{ color:#000; }
+  table{ width:100%; border-collapse:collapse; margin:1px 0 2px; font-size:7.6px; }
+  th,td{ border:0.5px solid var(--rule); padding:0.5px 2px; text-align:left; vertical-align:top; }
+  th{ background:var(--box); }
+  .key{ background:var(--box); border:0.5px solid var(--rule); border-radius:3px; padding:2px 3px; margin:2px 0; }
+  .tag{ color:var(--muted); font-style:italic; }
+  .avoid{ break-inside:avoid; }
+  @media print{
+    @page{ size:letter; margin:0.28in; }
+    body{ font-size:8.2px; }
+    .sheet{ width:auto; margin:0; padding:0; column-count:3; }
+    .noprint{ display:none; }
+  }
+  @media screen{
+    body{ background:#e9eef3; padding:14px; font-size:10px; }
+    .sheet{ background:#fff; box-shadow:0 2px 14px rgba(0,0,0,.2); }
+    .noprint{ max-width:7.9in; margin:0 auto 10px; text-align:center; color:#333; font-size:12px; }
+  }
+</style>
+</head>
+<body>
+<div class="noprint">🖨️ Print this page (Ctrl/Cmd-P) to get a single-page cheat sheet. The print layout is 3 columns on Letter.</div>
+<div class="sheet">
+  <h1>Computer Networks — Midterm Cheat Sheet (Ch. 1–5)</h1>
+  <p class="sub">Dordal, <i>An Introduction to Computer Networks</i> · all exam questions = textbook exercises · <b>neighbor form</b> next_hop = name the neighbor, not the port number.</p>
+
+  <!-- ===================== CH 1 ===================== -->
+  <h2>Ch. 1 · Datagram Forwarding</h2>
+  <p>Switch/router forwards each packet using a <b>forwarding table</b>: rows <span class="f">⟨destination, next_hop⟩</span>. Directly attached = <span class="f">direct</span>/<span class="f">local</span>.</p>
+  <p><b>Flooding</b> = out all ports except arrival (used when destination unknown / broadcast).</p>
+  <p><b>Build a table:</b> for each dest, take the <b>shortest path</b>; next_hop = <b>first switch on it</b>. Ties → either is OK; <i>indicate</i> them.</p>
+  <p><b>Default entry</b> <span class="f">⟨default, next_hop⟩</span> catches unlisted dests. Delete explicit rows whose next_hop <b>equals</b> the default's next_hop (implied).</p>
+  <div class="key avoid"><b>Routing loops:</b> only two shapes — (1) two <b>adjacent</b> switches bounce a packet, or (2) a <b>topological cycle</b>. <b>Linear loops of length &gt; 1 impossible</b> (forwarding is a function; a repeat traps the packet). Real defense: <b>TTL</b> (decrement/hop, drop at 0); split horizon / path vectors.</div>
+  <p><b>Weighted links:</b> choose min <b>total weight</b>. Inverse problem ("make this route optimal"): weight 1 everywhere, one/two "bad" links weight 10.</p>
+  <p><b>Subnets:</b> a Class C net <span class="f">200.0.x/24</span> is one route row; direct nets = local, remote = neighbor router. (CIDR later.)</p>
+
+  <!-- ===================== CH 2 ===================== -->
+  <h2>Ch. 2 · Ethernet Basics</h2>
+  <p><b>CSMA/CD</b>: listen first; transmit if idle; on <b>collision</b> send jam + back off.</p>
+  <div class="key avoid"><p><b>Exponential backoff:</b> after <b>n-th</b> collision choose <span class="f">k ∈ [0, 2ⁿ−1]</span> slot times; retransmit at detect_time + k. n caps at <b>10</b> (1023); give up after <b>16</b> collisions.</p>
+  <p><b>Numbers:</b> slot time = <b>512 bit-times = 51.2 µs</b>; min frame = <b>64 B</b> (guarantees collision detection); max payload = <b>1500 B</b>.</p></div>
+  <h3>Learning switch</h3>
+  <ul>
+    <li><b>Learn</b> source addr → arrival port.</li>
+    <li>Dest <b>known</b> → forward that one port.</li>
+    <li>Dest <b>unknown</b> → flood; <b>broadcast</b> → flood.</li>
+  </ul>
+  <p>Process frames <b>in order</b>; update <b>every switch that sees</b> the frame. A known destination stops the frame before downstream switches.</p>
+  <p><b>Loop w/o STP:</b> unknown/broadcast frames have <b>no TTL</b> → flood forever (broadcast storm).</p>
+  <p><b>VLAN:</b> logical color/ID per port; trunk frames tagged <b>802.1Q</b>.</p>
+
+  <!-- ===================== CH 3 ===================== -->
+  <h2>Ch. 3 · Advanced Ethernet</h2>
+  <h3>Spanning Tree (STP)</h3>
+  <ul>
+    <li><b>Root</b> = lowest switch ID.</li>
+    <li>Each non-root: keep <b>least-cost path to root</b>; tie → <b>lowest-ID neighbor</b>.</li>
+    <li><b>Prune/block</b> all other root-ward links → loop-free tree.</li>
+    <li>Switches exchange <b>BPDUs</b>.</li>
+  </ul>
+  <h3>Distance-vector for Ethernet</h3>
+  <p>If switches can find directly-connected hosts, DV can build optimal tables even with loops; mark packets to test direct connectivity. <b>Broadcast/multicast still loops.</b></p>
+  <h3>SDN / OpenFlow</h3>
+  <ul>
+    <li>Switch = <b>flow tables</b> of <span class="f">match → action</span>.</li>
+    <li>Unknown dest → <b>report to controller</b>; controller <b>learns source</b> (<span class="f">source → arrival port</span>).</li>
+    <li>Switch then <b>floods</b>; if dest known → forward, <b>no report</b>.</li>
+    <li>Variants differ in the trigger: unknown <b>dest</b> only vs unknown dest <b>or source</b>.</li>
+  </ul>
+
+  <!-- ===================== CH 4 ===================== -->
+  <h2>Ch. 4 · Wireless LANs</h2>
+  <p><b>Hidden node:</b> two senders each reach a receiver but <b>not each other</b> → simultaneous tx collide at receiver. 3-sender: senders on a triangle/circle around receiver (or walls).</p>
+  <p><b>CSMA/CA</b> (Wi-Fi): no collision detection; random backoff, <b>DIFS &gt; SIFS</b>; ACK/CTS after SIFS; RTS/CTS for hidden nodes.</p>
+  <p><b>ACK without sensing:</b> small, follows a just-finished tx; a "collision" only matters if a node reads <b>neither</b> signal.</p>
+  <div class="key avoid"><b>Contention loss:</b> 802.11g slot = <b>9 µs</b>; 1 kB @ 54 Mbps ≈ <b>151 µs</b>. Fraction of bandwidth lost = <span class="f">T_cont / (T_cont + T_tx)</span>. (avg 64 slots → 576 µs → ≈79 % lost.)</div>
+  <p><b>WiMAX/LTE:</b> scheduled (base station allocates); subscribers needn't hear each other. <b>Wi-Fi:</b> listens & defers.</p>
+  <p><b>WiMAX ranging:</b> 33 m/s over 60 s = 1980 m ⇒ <span class="f">1980/300 ≈ 6.6 µs</span> early/late; guard = 2× ⇒ 5000 senders/s ≈ 66 ms/s ≈ 6.6 %.</p>
+  <p><b>Two-ray ground:</b> reflected path <span class="f">r′ ≈ r(1+2h²/r²)</span>; subtract 180°-shifted signals ⇒ amplitude ∝ 1/r² ⇒ <b>power ∝ 1/r⁴</b>.</p>
+  <p><b>Wi-Fi 4-way handshake:</b> replay attack fails when AP sends a <b>fresh nonce</b> — replayed msgs carry the old nonce ⇒ wrong <b>MIC</b>.</p>
+
+  <!-- ===================== CH 5 ===================== -->
+  <h2>Ch. 5 · Other LANs</h2>
+  <h3>VPN / tunneling</h3>
+  <p>Private-addressed packets are <b>encapsulated</b> in Internet packets to a VPN gateway. Devices e.g. <span class="f">eth0</span> (public), <span class="f">ppp0</span> (tunnel).</p>
+  <ul>
+    <li>"all else via ppp0" ⇒ traffic to a local/public addr is forced into the tunnel.</li>
+    <li>"<b>all</b> traffic via ppp0" ⇒ the tunnel's own packets get tunneled → <b>recursion/loop</b>.</li>
+    <li>Split tunnel must <b>exclude the gateway address</b> (and the carrier traffic).</li>
+  </ul>
+  <h3>Token Ring / Bus</h3>
+  <p>Only the <b>token holder</b> transmits; avg passes over N stations = <b>N/2</b>.
+  Order can be set by sorting numeric <b>MAC addresses</b>. Token 64 B @ 10 Mbps = 51.2 µs; ×20 = <b>1.024 ms</b>.</p>
+  <h3>ATM / AAL-5</h3>
+  <p>Cell = <b>53 B</b> (5 B header + <b>48 B</b> payload). <b>SM90:</b> N cells + 1 XOR cell recovers any single loss.
+  With XOR = 21 cells (no retx); without ≈ 20 + 400p. Equal at <span class="f">21 = 20+400p ⇒ p = 0.25 %</span>.</p>
+  <h3>Virtual Circuits</h3>
+  <table class="avoid">
+    <tr><th>VCI_in</th><th>port_in</th><th>VCI_out</th><th>port_out</th></tr>
+    <tr><td colspan="4">port = <b>node at the other end</b>; VCIs are <b>per-link</b> labels (reusable).</td></tr>
+  </table>
+  <p><b>Trace a VC:</b> start at ingress entry → follow <span class="f">VCI_out/port_out</span> to next switch → match its <span class="f">VCI_in/port_in</span> → repeat to endpoint. A switch visited twice has <b>two rows</b> (different incoming port).</p>
+
+  <!-- ===================== FORMULAS ===================== -->
+  <h2>Quick numbers &amp; formulas</h2>
+  <table class="avoid">
+    <tr><th>Quantity</th><th>Value</th></tr>
+    <tr><td>Ethernet slot time (10 Mbps)</td><td>512 bit-times = 51.2 µs</td></tr>
+    <tr><td>Min Ethernet frame</td><td>64 B</td></tr>
+    <tr><td>Max Ethernet payload</td><td>1500 B</td></tr>
+    <tr><td>802.11g slot time</td><td>9 µs</td></tr>
+    <tr><td>Tx time</td><td>bits ÷ data-rate</td></tr>
+    <tr><td>Contention loss</td><td>T_cont/(T_cont+T_tx)</td></tr>
+    <tr><td>WiMAX delay error</td><td>(speed×interval)÷c</td></tr>
+    <tr><td>Two-ray power</td><td>∝ 1/r⁴</td></tr>
+    <tr><td>ATM cell</td><td>5 B hdr + 48 B</td></tr>
+    <tr><td>Token wait (N stations)</td><td>(N/2)×token-tx-time</td></tr>
+    <tr><td>Backoff range (round n)</td><td>[0, 2ⁿ−1] slots</td></tr>
+    <tr><td>Root bridge</td><td>lowest switch ID</td></tr>
+  </table>
+  <p class="tag">Cross-check every worked example against the book's Ch. 34 "Selected Solutions" and watch the exercise-numbering conversion table.</p>
+</div>
+</body>
+</html>

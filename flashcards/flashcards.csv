@@ -1,0 +1,45 @@
+"What structure does a switch/router consult to forward a packet, and what are its two fields?","A forwarding table; each row is <destination, next_hop> (plus an optional default row).",ch1 datagram-forwarding
+"In these exercises, what is 'neighbor form' vs 'interface form' for next_hop?",Neighbor form names the neighbor switch/node; interface form gives the port number. The exercises ask for neighbor form.,ch1 datagram-forwarding
+How is a directly attached destination written in a forwarding table?,direct or local.,ch1 datagram-forwarding
+What is flooding?,Forwarding out of all ports except the arrival port; used when the destination is unknown or for broadcast.,ch1 datagram-forwarding
+"A default forwarding entry catches what, and which explicit entries can you delete?",It catches all unlisted destinations; delete any explicit entry whose next_hop equals the default's next_hop.,ch1 datagram-forwarding
+Two forms a forwarding loop can take?,"Two adjacent switches bouncing a packet, or an actual topological cycle. Linear loops of length > 1 are impossible.",ch1 routing-loops
+How is IP forwarding loop prevention done in practice?,"TTL decremented per hop, drop at 0; routing uses split horizon / path vectors.",ch1 routing-loops
+How do you choose a path when links have weights?,Minimum total weight (shortest-path problem).,ch1 routing
+Inverse weight problem: make a given route optimal. Trick?,Weight 1 on all links except one or two 'bad' links with weight 10; the target route avoids them.,ch1 routing
+CSMA/CD stands for / does what?,"Carrier Sense Multiple Access with Collision Detection: listen before sending; on collision, jam and back off.",ch2 ethernet
+"Exponential backoff: after the nth collision, from what range is k chosen?","k uniform in [0, 2^n - 1] slot times. n caps at 10; give up after 16 collisions.",ch2 ethernet
+Slot time on 10-Mbps classic Ethernet?,512 bit times = 51.2 microseconds.,ch2 ethernet
+"Minimum Ethernet frame size, and why?","64 bytes, so collisions are detected within the slot time.",ch2 ethernet
+Standard Ethernet max payload?,1500 bytes (max frame 1518 bytes).,ch2 ethernet
+Learning-switch algorithm: the two steps on each arriving frame?,1) Learn the source address -> arrival port. 2) Look up the destination: known -> forward one port; unknown -> flood; broadcast -> flood.,ch2 switching
+Why do two switches in a loop (no STP) cause a problem?,"An unknown/broadcast frame is flooded forever: layer 2 has no TTL, so it circulates endlessly and tables thrash.",ch2 switching
+"How does a VLAN distinguish traffic, and what tag does it use?",By a 'color' / VLAN id; trunk frames carry an 802.1Q tag.,ch2 vlan
+Spanning Tree Algorithm: how is the root chosen?,The switch with the lowest ID.,ch3 stp
+"After the root is chosen, what does each switch do?",Chooses the least-cost path to the root (tie-break by lowest-ID neighbor) and blocks its other root-ward links.,ch3 stp
+What messages do switches exchange to build/repair the spanning tree?,BPDUs (Bridge Protocol Data Units).,ch3 stp
+Purpose of STP?,Turn a physical mesh into a loop-free logical tree.,ch3 stp
+"In OpenFlow/SDN, what is a flow table?",A set of rules match -> action installed on the switch (some by a controller).,ch3 sdn
+OpenFlow behavior when the destination is unknown?,"Report to the controller; controller learns the source; switch floods. If the destination is known, forward normally and do not report.",ch3 sdn
+What does the OpenFlow controller install when it learns a source address?,A forwarding entry <source address -> arrival port>.,ch3 sdn
+Hidden-node problem?,Two senders in range of a common receiver but not of each other transmit simultaneously and collide at the receiver.,ch4 wireless
+Wi-Fi medium-access method (not CSMA/CD)?,CSMA/CA - collision avoidance (no collision detection over radio).,ch4 wireless
+"In Wi-Fi, is SIFS shorter or longer than DIFS, and what uses SIFS?",SIFS is shorter; it is used for ACKs and other immediate responses.,ch4 wireless
+Why can an ACK be sent without sensing the medium?,It follows a just-finished transmission and may still be decodable; a collision only matters if a node can read neither signal.,ch4 wireless
+802.11g slot time?,9 microseconds.,ch4 wireless
+Fraction of bandwidth lost to contention when transmission T_tx and contention T_c alternate?,T_c / (T_c + T_tx).,ch4 wireless
+WiMAX/LTE vs Wi-Fi on sharing the medium?,WiMAX/LTE are scheduled (base station allocates); Wi-Fi stations listen and defer.,ch4 wireless
+Two-ray ground model: received power proportional to?,"1 / r^4 (fourth power), not 1/r^2.",ch4 wireless
+Where does a recorded Wi-Fi 4-way-handshake replay attack break down?,"When the AP sends a fresh nonce: the replay carries the victim's old nonce, so the attacker cannot produce the matching MIC.",ch4 wireless
+"What is a VPN, in one line?",A virtual private network that encapsulates private-addressed packets inside normal Internet packets sent to a VPN gateway.,ch5 vpn
+Why does routing all traffic over the tunnel break the tunnel itself?,The tunnel's own encapsulated packets must reach the gateway over the real interface; sending those into the tunnel too recurses/loops.,ch5 vpn
+What must a split-tunnel route exclude?,Traffic to the VPN gateway address and the local/VM traffic used to carry the tunnel.,ch5 vpn
+Token Ring: who may transmit?,Only the station currently holding the token.,ch5 tokenring
+Average number of stations a token passes on an idle N-station ring?,N / 2.,ch5 tokenring
+How can stations set up a token order?,"Sort by numeric MAC address (smallest -> S0, next -> S1, ...).",ch5 tokenring
+ATM cell size?,53 bytes = 5-byte header + 48-byte payload.,ch5 atm
+AAL-5 / SM90 error-recovery idea?,"Send N cells plus one extra cell = XOR of the N cells, so any single lost cell is recoverable.",ch5 atm
+VCI table columns?,VCI_in | port_in | VCI_out | port_out.,ch5 vc
+"In a VCI table, what identifies a port?",The node at the other end of the link.,ch5 vc
+How do you trace a virtual circuit through VCI tables?,"Follow VCI_out on port_out to the next switch, match its VCI_in/port_in, repeat to the endpoint.",ch5 vc
+Can the same VCI value appear on different links?,Yes - VCIs are per-link labels.,ch5 vc
