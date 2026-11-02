@@ -15,13 +15,13 @@ Source pages used (2nd edition):
 
 ## 1. Exercise census — what is actually testable
 
-44 exercises exist across ch. 1–5. No prose topic is worth studying unless it appears here.
+46 exercises exist across ch. 1–5. No prose topic is worth studying unless it appears here.
 
 | Ch | Title | Exercises | Dominant tested topics |
 |----|-------|-----------|------------------------|
 | 1 | An Overview of Networks | 1.0–12.0 (12) | **Datagram forwarding / forwarding tables**, default entries, **routing loops**, link weights & shortest path, IPv4 forwarding with subnets |
 | 2 | Ethernet Basics | 1.0–10.0 (10) | **CSMA/CD contention & exponential backoff**, **learning switches** (flooding, source learning), loops without STP, VLAN color |
-| 3 | Advanced Ethernet | 1.0–8.0 (6) | **Spanning Tree Algorithm**, **VLANs**, **SDN / OpenFlow** flow tables & controller behavior |
+| 3 | Advanced Ethernet | 1.0–8.0 (8) | **Spanning Tree Algorithm**, **VLANs**, **SDN / OpenFlow** flow tables & controller behavior |
 | 4 | Wireless LANs | 1.0–7.0 (7) | **Hidden-node problem**, **CSMA/CA contention** (numeric), WiMAX ranging (numeric), **two-ray ground model**, Wi-Fi 4-way handshake |
 | 5 | Other LANs | 1.0–9.0 (9) | **VPN / tunneling / NAT**, **Token Ring/Bus** token timing, **ATM** (AAL XOR), **virtual circuits & VCI tables** |
 
