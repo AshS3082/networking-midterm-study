@@ -12,6 +12,7 @@ Study materials for the networking midterm covering **chapters 1–5** of
 |------|------------|
 | `study-guide/study-guide.md` | The main guide: exercise census, topic-by-topic coverage, key facts |
 | `problems/sample-problems.md` | Exercise-style practice questions (hints only) |
+| `problems/practice-quiz.md` | Short self-test quiz (12 Qs) with answer key |
 | `problems/worked-examples.md` | Full worked solutions to the sample problems |
 | `flashcards/flashcards.md` | Human-readable flashcards, grouped by chapter |
 | `flashcards/flashcards.csv` | Import into **Anki** (File → Import; fields: Front, Back, Tags) |
@@ -23,11 +24,12 @@ Study materials for the networking midterm covering **chapters 1–5** of
 
 1. **Read** `study-guide/study-guide.md` — start with the exercise census in §1.
 2. **Practice** with `problems/sample-problems.md`, then check `problems/worked-examples.md`.
-3. **Drill** `flashcards/flashcards.csv` in Anki (make a deck, import, split on comma).
-4. **Watch** `animations/csma-cd.html`, `ethernet-learning.html`, `spanning-tree.html`,
+3. **Self-test** with `problems/practice-quiz.md` (short, answer key included).
+4. **Drill** `flashcards/flashcards.csv` in Anki (make a deck, import, split on comma).
+5. **Watch** `animations/csma-cd.html`, `ethernet-learning.html`, `spanning-tree.html`,
    `datagram-forwarding.html` (just open them in a browser).
-5. **Print** `cheatsheet/cheatsheet.html` for the allowed one-page sheet.
-6. **Quiz** — do it without LLMs; drop your answers in `quiz/`.
+6. **Print** `cheatsheet/cheatsheet.html` for the allowed one-page sheet.
+7. **Quiz** — do it without LLMs; drop your answers in `quiz/`.
 
 ## Animations
 

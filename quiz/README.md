@@ -3,6 +3,9 @@
 This folder is intentionally left for the in-lab quiz, which must be produced **without direct
 LLM assistance**. At 3:50pm the LLM tools go down and the quiz questions are provided.
 
+> A **practice quiz** for self-testing lives at `problems/practice-quiz.md` — that one is study
+> material and has an answer key; it is **not** the graded quiz.
+
 Suggested organization:
 
 ```
